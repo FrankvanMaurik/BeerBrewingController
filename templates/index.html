@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Control</title>
+    <!-- Load Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Warm Water Vessel Control</h1>
+    
+    <!-- Display the measured temperature -->
+    <h3>Current Temperature of Water Vessel:</h3>
+    <p id="current-temperature">{{ temperature }} °C</p>
+
+    <h3>Setpoint Control</h3>
+    <form id="setpoint-form">
+        <label for="setpoint">Setpoint Temperature (°C):</label>
+        <input type="number" id="setpoint" name="setpoint" step="0.1" value="{{ setpoint }}" required>
+        <button type="submit">Set Setpoint</button>
+    </form>
+	<script type="text/javascript">
+		// Handle the setpoint form submission asynchronously
+		document.getElementById('setpoint-form').addEventListener('submit', function(event) {
+			event.preventDefault();  // Prevent the form from reloading the page
+		
+			var setpoint = document.getElementById('setpoint').value;
+		
+			// Send the setpoint data to the server using AJAX (fetch)
+			fetch('/setpoint', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: 'setpoint=' + setpoint
+			})
+			.then(response => response.json())
+			.then(data => {
+				// Handle the response from the server
+				if (data.status === 'success') {
+					// Update the UI with the new setpoint
+					document.getElementById('setpoint').value = data.setpoint;
+					console.log('Setpoint updated to:', data.setpoint);
+				}
+			})
+			.catch(error => {
+				console.error('Error updating setpoint:', error);
+			});
+		});
+
+	</script>
+
+    <h3>Temperature History</h3>
+    <!-- Render Plotly graph -->
+    <div id="temperature-plot"></div>
+
+    <script type="text/javascript">
+	
+	
+        // Get the initial graph data from Flask (set the initial graph)
+        var graphs = {{ graphJSON | safe }};
+        Plotly.newPlot('temperature-plot', graphs.data, graphs.layout);
+
+        // Optional: Update the current temperature on the webpage dynamically (without page reload)
+        function updateTemperature() {
+            fetch('/').then(response => response.text())
+            .then(html => {
+                var newTemperature = html.match(/Current Temperature of Water Vessel:<\/h3>\s*<p id="current-temperature">([0-9.]+) °C<\/p>/);
+                if (newTemperature) {
+                    document.getElementById('current-temperature').textContent = newTemperature[1] + " °C";
+                }
+            });
+        }
+
+        // Refresh the temperature every second (adjust as needed)
+        setInterval(updateTemperature, 1000);
+
+        function updateGraph() {
+            fetch('/temperature_data')
+                .then(response => response.json())
+                .then(data => {
+                    // Get the updated time and temperature data
+                    var updatedTime = data.time;
+                    var updatedTemperature = data.temperature;
+                    var updatedSetpoint = data.setpoint;
+
+                    // Prepare the updated data for temperature trace
+                    var templine = {
+                        x: [[updatedTime]],  // Must be an array of arrays to match Plotly format
+                        y: [[updatedTemperature]]  // Same here for y
+                    };
+
+                    // Prepare the updated data for setpoint trace
+                    var setpointLine = {
+                        x: [[updatedTime]],  // Must be an array of arrays to match Plotly format
+                        y: [[updatedSetpoint]],  // Same here for y
+                    };
+
+                    // Extend traces correctly
+                    Plotly.extendTraces('temperature-plot', templine, [0]);
+                    Plotly.extendTraces('temperature-plot', setpointLine, [1]);
+                })
+                .catch(error => console.error('Error updating graph:', error));
+        }
+
+        // Update the graph every second
+        setInterval(updateGraph, 1000);
+    </script>
+</body>
+</html>

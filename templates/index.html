@@ -51,6 +51,44 @@
 
 	</script>
 
+	<h3>PWM controler</h3>
+    <form id="setpoint-form">
+        <label for="setpoint">Setpoint PWM (%):</label>
+        <input type="number" id="PWMsetpoint" name="PWMsetpoint" step="0.1" value="{{ PWMsetpoint }}" required>
+        <button type="submit">Set PWM</button>
+    </form>
+
+	<script type="text/javascript">
+		// Handle the setpoint form submission asynchronously
+		document.getElementById('setpoint-form').addEventListener('submit', function(event) {
+			event.preventDefault();  // Prevent the form from reloading the page
+		
+			var PWMsetpoint = document.getElementById('PWMsetpoint').value;
+		
+			// Send the setpoint data to the server using AJAX (fetch)
+			fetch('/PWMsetpoint', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: 'PMWsetpoint=' + PWMsetpoint
+			})
+			.then(response => response.json())
+			.then(data => {
+				// Handle the response from the server
+				if (data.status === 'success') {
+					// Update the UI with the new setpoint
+					document.getElementById('PWMsetpoint').value = data.setpoint;
+					console.log('Setpoint updated to:', data.setpoint);
+				}
+			})
+			.catch(error => {
+				console.error('Error updating PWMsetpoint:', error);
+			});
+		});
+
+	</script>
+
     <h3>Temperature History</h3>
     <!-- Render Plotly graph -->
     <div id="temperature-plot"></div>

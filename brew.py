@@ -20,6 +20,8 @@ temperature_history = []
 setpoint_history = []
 time_history = []
 setpoint = 25.0  # Default setpoint in Celsius
+PWMsetpoint = 0  # PWM vallue in %
+PWMactive = 0    # 0 when PID mode is active, 1 when PWM mode is active. 
 
 #setting up the pid controller 
 pid = PID(40, 0.05, 0.0, setpoint=setpoint)
@@ -33,6 +35,8 @@ GPIO.setup(12, GPIO.OUT)
 # Function to read temperature every second
 def read_temperature():
     global setpoint
+    global PWMsetpoint
+    global PWMactive
 
     p = GPIO.PWM(12, 0.5)
     p.start(1);
@@ -54,15 +58,16 @@ def read_temperature():
             temperature_history.pop(0)
             setpoint_history.pop(0)
             time_history.pop(0)
-
-        #pid controller
-        pid.setpoint = Setp
-        error = pid(temperature)
-
-        #PWM
-        p.ChangeDutyCycle(error)
-        print("error = %d",error)
-
+        
+        if PWMactive = 0
+            #pid controller
+            pid.setpoint = Setp
+            error = pid(temperature)
+            #PWM
+            p.ChangeDutyCycle(error)
+            print("error = %d",error)
+        else
+            p.ChangeDutyCycle(PWMsetpoint)
 
         # Wait for one second before reading again
         time.sleep(1)
@@ -116,12 +121,26 @@ def index():
 @app.route('/setpoint', methods=['POST'])
 def set_setpoint():
     global setpoint
+    global PWMactive
     # Get the setpoint from the form (ensure it's converted to a float)
     try:
         setpoint = float(request.form['setpoint'])
+        PWMactive = 0
         return jsonify({'status': 'success', 'setpoint': setpoint})
     except ValueError:
         return jsonify({'status': 'error', 'message': 'Invalid setpoint value'}), 400
+
+@app.route('/PWMsetpoint', methods=['POST'])
+def set_PWMsetpoint():
+    global PWMsetpoint
+    global PWMactive
+    # Get the setpoint from the form (ensure it's converted to a float)
+    try:
+        setpoint = float(request.form['setpoint'])
+        PWMactive = 1
+        return jsonify({'status': 'success', 'setpoint': setpoint})
+    except ValueError:
+
 
 
 @app.route('/temperature_data', methods=['GET'])
